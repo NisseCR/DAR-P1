@@ -1,6 +1,5 @@
-def test():
-    print("hello")
+import preprocessing as pre
 
 
 if __name__ == '__main__':
-    test()
+    pre.main()
