@@ -23,11 +23,13 @@ def read_workload_data() -> pd.DataFrame:
 
     workload_elements = []
     for line in lines[2::]:
-        cons = line.split('WHERE ')[1].replace('\n', '').replace("'", '').split(' AND ')
+        elements = line.split('WHERE ')
+        weight = int(elements[0].split(' times: ')[0])
+        cons = elements[1].replace('\n', '').replace("'", '').split(' AND ')
 
         for con in cons:
             key, values = format_condition(con)
-            workload_elements.append((key, values))
+            workload_elements += [(key, values) for _ in range(weight)]
 
     return pd.DataFrame(workload_elements, columns=['attribute', 'values'])
 
@@ -74,6 +76,11 @@ def get_qf_frequency_categorical(workload: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def get_qf_jaccard_categorical(workload: pd.DataFrame) -> pd.DataFrame:
+    df = workload
+    return df
+
+
 def get_idf_categorical() -> pd.DataFrame:
     df = read_categorical_data()
 
@@ -103,14 +110,16 @@ def get_idf_categorical() -> pd.DataFrame:
 def main():
     # Parse workload
     workload_df = read_workload_data()
-    print(workload_df)
 
     # Calculate scores
     idf_cat_df = get_idf_categorical()
     qf_freq_cat_df = get_qf_frequency_categorical(workload_df)
+    qf_jac_cat_df = get_qf_jaccard_categorical(workload_df)
 
     # Debug
+    # print(idf_cat_df)
     print(qf_freq_cat_df)
+    print(qf_jac_cat_df)
 
 
 if __name__ == '__main__':
