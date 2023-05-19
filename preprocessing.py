@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import pandas as pd
 import sqlite3
 import math
@@ -5,7 +7,35 @@ import math
 conn = sqlite3.connect('./cars.sqlite')
 
 
-def get_categorical_data() -> pd.DataFrame:
+def format_condition(con: str) -> tuple[str, list[str]]:
+    if ' = ' in con:
+        elements = con.split(' = ')
+        return elements[0], [elements[1]]
+    else:
+        elements = con.split(' IN ')
+        attribute = elements[0]
+        values = elements[1][1:-1].split(',')
+        return attribute, values
+
+
+def parse_workload_data():
+    with open('./workload.txt') as f:
+        lines = f.readlines()
+
+    workload_elements = []
+    for line in lines[2::]:
+        cons = line.split('WHERE ')[1].replace('\n', '').replace("'", '').split(' AND ')
+        print(cons)
+
+        for con in cons:
+            key, values = format_condition(con)
+            workload_elements.append([key, values])
+
+    for ele in workload_elements:
+        print(ele)
+
+
+def read_categorical_data() -> pd.DataFrame:
     query = """
         SELECT
             brand,
@@ -14,8 +44,7 @@ def get_categorical_data() -> pd.DataFrame:
         FROM autompg
         """
 
-    df = pd.read_sql(query, conn)
-    return df
+    return pd.read_sql(query, conn)
 
 
 def calculate_idf_categorical(df: pd.DataFrame) -> pd.DataFrame:
@@ -23,7 +52,9 @@ def calculate_idf_categorical(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def idf_categorical() -> pd.DataFrame:
-    df = get_categorical_data()
+    df = read_categorical_data()
+
+    # setup
     n = len(df)
     result_df = pd.DataFrame()
 
@@ -47,7 +78,7 @@ def idf_categorical() -> pd.DataFrame:
 
 def main():
     idf_cat_df = idf_categorical()
-    print(idf_cat_df)
+    parse_workload_data()
 
 
 if __name__ == '__main__':
