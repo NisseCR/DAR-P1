@@ -41,12 +41,10 @@ def read_workload_data() -> pd.DataFrame:
     return df
 
 
-def read_categorical_data() -> pd.DataFrame:
+def read_database_data() -> pd.DataFrame:
     query = """
         SELECT
-            brand,
-            model,
-            type
+            *
         FROM autompg
         """
 
@@ -65,11 +63,11 @@ def calculate_idf_categorical(n: int, frequency: int) -> float:
 
 
 # <editor-fold desc="Data aggregation">
-def get_qf_frequency_categorical(workload: pd.DataFrame) -> pd.DataFrame:
-    df = workload.copy()
+def get_qf_frequency_categorical(workload_df: pd.DataFrame) -> pd.DataFrame:
+    df = workload_df.copy()
 
     # Get categorical attributes
-    df = df[df['attribute'].isin(['brand', 'model', 'type'])]
+    df = df[df['attribute'].isin(['brand', 'model', 'type', 'cylinders', 'origin'])]
 
     # Explode list elements and count
     df = df[['attribute', 'value']].explode('value').value_counts().reset_index()
@@ -83,8 +81,8 @@ def get_qf_frequency_categorical(workload: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_qf_jaccard_categorical(workload: pd.DataFrame) -> pd.DataFrame:
-    df = workload.copy()
+def get_qf_jaccard_categorical(workload_df: pd.DataFrame) -> pd.DataFrame:
+    df = workload_df.copy()
 
     # Get IN clauses
     df = df[df['clauses'] > 1]
@@ -97,10 +95,13 @@ def get_qf_jaccard_categorical(workload: pd.DataFrame) -> pd.DataFrame:
     return df[['attribute', 'value', 'query_id']]
 
 
-def get_idf_categorical() -> pd.DataFrame:
-    df = read_categorical_data()
+def get_idf_categorical(database_df: pd.DataFrame) -> pd.DataFrame:
+    df = database_df.copy()
 
-    # setup
+    # Get categorical attributes
+    df = df[['brand', 'model', 'type', 'cylinders', 'origin']]
+
+    # Setup
     n = len(df)
     result_df = pd.DataFrame()
 
@@ -124,11 +125,12 @@ def get_idf_categorical() -> pd.DataFrame:
 
 
 def main():
-    # Parse workload
+    # Fetch data
     workload_df = read_workload_data()
+    database_df = read_database_data()
 
     # Calculate scores
-    idf_cat_df = get_idf_categorical()
+    idf_cat_df = get_idf_categorical(database_df)
     qf_freq_cat_df = get_qf_frequency_categorical(workload_df)
     qf_jac_cat_df = get_qf_jaccard_categorical(workload_df)
 
