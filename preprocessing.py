@@ -5,6 +5,7 @@ import sqlite3
 import math
 
 CONN = sqlite3.connect('./cars.sqlite')
+CURSOR = CONN.cursor()
 CATS = ['brand', 'model', 'type', 'cylinders', 'origin']
 NUMS = ['mpg', 'displacement', 'horsepower', 'weight', 'acceleration', 'model_year']
 
@@ -157,10 +158,17 @@ def get_idf_numerical(database_df: pd.DataFrame) -> pd.DataFrame:
         temp_df['idf'] = temp_df['value'].apply(lambda t: calculate_idf_numerical(h, n, t, temp_df['value']))
 
         # Append result
+        temp_df = temp_df.groupby(['attribute', 'value']).agg(idf=('idf', 'mean')).reset_index()
         result_df = pd.concat([result_df, temp_df])
 
     return result_df[['attribute', 'value', 'idf']]
 # </editor-fold>
+
+
+def export(name: str, df: pd.DataFrame):
+    CURSOR.execute(f'DELETE FROM {name}')
+    df.to_sql(name, CONN, if_exists='append', index=False, method='multi')
+    print(f'Exported data to [{name}]')
 
 
 def main():
@@ -171,8 +179,14 @@ def main():
     # Calculate scores
     idf_cat_df = get_idf_categorical(database_df)
     idf_num_df = get_idf_numerical(database_df)
-    qf_freq_cat_df = get_qf_frequency_categorical(workload_df)
+    qf_rqf_cat_df = get_qf_frequency_categorical(workload_df)
     qf_jac_cat_df = get_qf_jaccard_categorical(workload_df)
+
+    # Export data
+    export('idf_cat', idf_cat_df)
+    export('idf_num', idf_num_df)
+    export('qf_rqf_cat', qf_rqf_cat_df)
+    export('qf_jac_cat', qf_jac_cat_df)
 
     # Debug
     print('\nIDF numerical')
@@ -182,7 +196,7 @@ def main():
     print(idf_cat_df)
 
     print('\nQF rqf categorical')
-    print(qf_freq_cat_df)
+    print(qf_rqf_cat_df)
 
     print('\nQF jaccard categorical')
     print(qf_jac_cat_df)
