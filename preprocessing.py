@@ -1,8 +1,12 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import sqlite3
 import math
 
-conn = sqlite3.connect('./cars.sqlite')
+CONN = sqlite3.connect('./cars.sqlite')
+CATS = ['brand', 'model', 'type', 'cylinders', 'origin']
+NUMS = ['mpg', 'displacement', 'horsepower', 'weight', 'acceleration', 'model_year']
 
 
 # <editor-fold desc="Read data">
@@ -48,7 +52,7 @@ def read_database_data() -> pd.DataFrame:
         FROM autompg
         """
 
-    return pd.read_sql(query, conn)
+    return pd.read_sql(query, CONN)
 # </editor-fold>
 
 
@@ -59,6 +63,11 @@ def calculate_qf_frequency_categorical(rqf: int, rqf_max: int) -> float:
 
 def calculate_idf_categorical(n: int, frequency: int) -> float:
     return math.log(n / frequency)
+
+
+def calculate_idf_numerical(h: float, n: int, t: float | int, ts: pd.Series):
+    rs = ts.apply(lambda ti: math.e**((-1/2) * (((ti - t) / h)**2)))
+    return math.log(n / rs.sum())
 # </editor-fold>
 
 
@@ -99,7 +108,7 @@ def get_idf_categorical(database_df: pd.DataFrame) -> pd.DataFrame:
     df = database_df.copy()
 
     # Get categorical attributes
-    df = df[['brand', 'model', 'type', 'cylinders', 'origin']]
+    df = df[CATS]
 
     # Setup
     n = len(df)
@@ -126,13 +135,31 @@ def get_idf_categorical(database_df: pd.DataFrame) -> pd.DataFrame:
 def get_idf_numerical(database_df: pd.DataFrame) -> pd.DataFrame:
     df = database_df.copy()
 
-    # Get numerical attributes
-    df = df[['horsepower']]
+    # Get categorical attributes
+    df = df[NUMS]
 
-    # Discretize data
-    df['bin'] = pd.cut(df['horsepower'], 6)
+    # Setup
+    n = len(df)
+    result_df = pd.DataFrame()
 
-    return df
+    for column in df.columns:
+        temp_df = df[[column]].copy()
+
+        # Format
+        temp_df['attribute'] = column
+        temp_df = temp_df.rename(columns={column: 'value'})
+
+        # Determine bandwidth
+        std = temp_df['value'].std()
+        h = 1.06 * std * (n ** (-1/5))
+
+        # Calculate IDF score
+        temp_df['idf'] = temp_df['value'].apply(lambda t: calculate_idf_numerical(h, n, t, temp_df['value']))
+
+        # Append result
+        result_df = pd.concat([result_df, temp_df])
+
+    return result_df[['attribute', 'value', 'idf']]
 # </editor-fold>
 
 
@@ -151,14 +178,14 @@ def main():
     print('\nIDF numerical')
     print(idf_num_df)
 
-    # print('\nIDF categorical')
-    # print(idf_cat_df)
-    #
-    # print('\nQF rqf categorical')
-    # print(qf_freq_cat_df)
-    #
-    # print('\nQF jaccard categorical')
-    # print(qf_jac_cat_df)
+    print('\nIDF categorical')
+    print(idf_cat_df)
+
+    print('\nQF rqf categorical')
+    print(qf_freq_cat_df)
+
+    print('\nQF jaccard categorical')
+    print(qf_jac_cat_df)
 
 
 if __name__ == '__main__':
