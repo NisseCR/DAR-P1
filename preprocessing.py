@@ -121,6 +121,18 @@ def get_idf_categorical(database_df: pd.DataFrame) -> pd.DataFrame:
         result_df = pd.concat([result_df, temp_df])
 
     return result_df[['attribute', 'value', 'frequency', 'idf']]
+
+
+def get_idf_numerical(database_df: pd.DataFrame) -> pd.DataFrame:
+    df = database_df.copy()
+
+    # Get numerical attributes
+    df = df[['horsepower']]
+
+    # Discretize data
+    df['bin'] = pd.cut(df['horsepower'], 6)
+
+    return df
 # </editor-fold>
 
 
@@ -131,18 +143,22 @@ def main():
 
     # Calculate scores
     idf_cat_df = get_idf_categorical(database_df)
+    idf_num_df = get_idf_numerical(database_df)
     qf_freq_cat_df = get_qf_frequency_categorical(workload_df)
     qf_jac_cat_df = get_qf_jaccard_categorical(workload_df)
 
     # Debug
-    print('\nIDF categorical')
-    print(idf_cat_df)
+    print('\nIDF numerical')
+    print(idf_num_df)
 
-    print('\nQF rqf categorical')
-    print(qf_freq_cat_df)
-
-    print('\nQF jaccard categorical')
-    print(qf_jac_cat_df)
+    # print('\nIDF categorical')
+    # print(idf_cat_df)
+    #
+    # print('\nQF rqf categorical')
+    # print(qf_freq_cat_df)
+    #
+    # print('\nQF jaccard categorical')
+    # print(qf_jac_cat_df)
 
 
 if __name__ == '__main__':
