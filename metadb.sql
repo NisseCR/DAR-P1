@@ -30,10 +30,19 @@ CREATE TABLE qf_rqf_cat (
     PRIMARY KEY (attribute, value)
 );
 
+/* IDF numerical */
+CREATE TABLE qf_rqf_num (
+    attribute VARCHAR(255),
+    value REAL,
+    qf REAL,
+    PRIMARY KEY (attribute, value)
+);
+
 /* QF jaccard categorical */
 CREATE TABLE qf_jac_cat (
     attribute VARCHAR(255),
-    value REAL,
-    query_id INTEGER,
-    PRIMARY KEY (attribute, value, query_id)
+    value_x REAL,
+    value_y REAL,
+    qf INTEGER,
+    PRIMARY KEY (attribute, value_x, value_y, qf)
 );
