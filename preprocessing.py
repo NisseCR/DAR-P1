@@ -259,11 +259,11 @@ def main():
     qf_rqf_num_df = get_numerical_qf(workload_df)
 
     # Export data
-    # export('idf_cat', idf_cat_df)
-    # export('idf_num', idf_num_df)
-    # export('qf_rqf_cat', qf_rqf_cat_df)
-    # export('qf_jac_cat', qf_jac_cat_df)
-    # export('qf_rqf_num', qf_rqf_num_df)
+    export('idf_cat', idf_cat_df)
+    export('idf_num', idf_num_df)
+    export('qf_rqf_cat', qf_rqf_cat_df)
+    export('qf_jac_cat', qf_jac_cat_df)
+    export('qf_rqf_num', qf_rqf_num_df)
 
     # Debug
     # print('\nIDF numerical')
