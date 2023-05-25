@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
 import math
-from preprocessing import read_database_data, CATS, NUMS
+from preprocessing import read_database_data, CATS, NUMS, CURSOR, CONN
 
 
 def main():
@@ -12,28 +12,47 @@ def main():
     k = dict.pop('k')
     tuples = read_database_data()
     tuples['score'] = tuples.apply(lambda tup: sim(tup, dict), axis=1)
+    #tuples.sort_values('score')
     print(tuples)
 
 
-def sim(tup: pd.Series, query: dict) -> int:
+def sim(tup: pd.Series, query: dict) -> float:
     score = 0
-    for queryCat,queryVal in query.items():
+    for queryCat, queryVal in query.items():
         if queryCat in CATS:
-            score += s_cat(queryCat, queryVal, tup[queryCat])
+            score += s_cat(queryCat, tup[queryCat], queryVal)
         elif queryCat in NUMS:
-            score += s_num(queryCat, queryVal, tup[queryCat])
+            score += s_num(queryCat, tup[queryCat], queryVal)
         else:
             print("cat not found")
+    return score
+
+
+def s_cat(cat, t_val, q_val):
+    idf = idf_cat(cat, t_val, q_val)
+    qf = qf_cat(cat,t_val,q_val)
+    return idf*qf
+
+def idf_cat(cat, t_val, q_val) -> float:
+    if (t_val==q_val):
+        print(f"IDF RES:::::{t_val}, {get_idf_cat(cat,t_val)}")
+        return get_idf_cat(cat, t_val)
+    else:
+        return 0
+
+
+def qf_cat(cat, t_val, q_val):
     return 1
 
+def get_idf_cat(cat, val):
+    query = f"SELECT idf FROM idf_Cat WHERE attribute='{cat}' AND value='{val}'"
+    cur = CONN.cursor()
+    cur.execute(query)
+    return cur.fetchone()[0]
 
-def s_cat(cat, qVal, tVal):
-    print(f"{cat},{qVal},{tVal}")
-    return 1
 
-
-def s_num(cat, qVal, tVal):
-    print(f"{cat},{qVal},{tVal}")
+def s_num(cat, t_val, q_val):
+    print(f"{cat},{t_val},{q_val}")
     return 1
 
 
