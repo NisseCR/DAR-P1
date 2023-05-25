@@ -24,7 +24,7 @@ def sim(tup: pd.Series, query: dict) -> float:
         elif queryCat in NUMS:
             score += s_num(queryCat, tup[queryCat], queryVal)
         else:
-            print("cat not found")
+            raise ValueError("Invalid category in input")
     return score
 
 
@@ -35,14 +35,26 @@ def s_cat(cat, t_val, q_val):
 
 def idf_cat(cat, t_val, q_val) -> float:
     if (t_val==q_val):
-        print(f"IDF RES:::::{t_val}, {get_idf_cat(cat,t_val)}")
         return get_idf_cat(cat, t_val)
     else:
         return 0
 
 
 def qf_cat(cat, t_val, q_val):
+    if t_val == q_val:
+        qf = get_qf(cat, t_val)
+    else:
+        qf = 0
+
     return 1
+
+
+def get_qf(cat, val):
+    query = f"SELECT qf FROM qf_rqf_Cat WHERE attribute='{cat}' AND value='{val}'"
+    cur = CONN.cursor()
+    cur.execute(query)
+    return cur.fetchone()[0]
+
 
 def get_idf_cat(cat, val):
     query = f"SELECT idf FROM idf_Cat WHERE attribute='{cat}' AND value='{val}'"
