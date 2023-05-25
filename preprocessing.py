@@ -57,6 +57,18 @@ def read_database_data() -> pd.DataFrame:
 # </editor-fold>
 
 
+def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.sort_values(by='value')
+    df['key'] = df.index
+    join_df = df.copy()
+    join_df['key'] = join_df['key'].shift(1)
+    df = pd.merge(df, join_df, on='key')
+    df = df.drop([])
+    df = df.rename(columns={'attribute_x': 'attribute'})
+    df = df.drop(['attribute_y', 'key'], axis=1)
+    return df
+
+
 # <editor-fold desc="Score formulas">
 def calculate_rqf(rqf: int, rqf_max: int) -> float:
     return (rqf + 1) / (rqf_max + 1)
@@ -117,6 +129,9 @@ def add_numerical_qf_attribute(df: pd.DataFrame, attribute: str, result_df: pd.D
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), qf=('qf', 'mean')).reset_index()
+
+    # Shift merge
+    temp_df = shift_merge(temp_df)
     return pd.concat([result_df, temp_df])
 
 
@@ -134,7 +149,8 @@ def get_numerical_qf(workload_df: pd.DataFrame) -> pd.DataFrame:
 
     for attribute in NUMS:
         result_df = add_numerical_qf_attribute(df, attribute, result_df, n)
-    return result_df
+
+    return result_df[['attribute', 'value_x', 'value_y', 'tf_x', 'tf_y', 'qf_x', 'qf_y']]
 # </editor-fold>
 
 
@@ -213,10 +229,9 @@ def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.Dat
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), idf=('idf', 'mean')).reset_index()
-    join_df = temp_df.copy()
-    join_df = join_df.shift(-1)
-    print(temp_df)
-    print(join_df)
+
+    # Merge with shift
+    temp_df = shift_merge(temp_df)
     return pd.concat([result_df, temp_df])
 
 
@@ -233,7 +248,7 @@ def get_numerical_idf(database_df: pd.DataFrame) -> pd.DataFrame:
     for column in df.columns:
         result_df = add_numerical_idf_attribute(df, column, result_df, n)
 
-    return result_df[['attribute', 'value', 'tf', 'idf']]
+    return result_df[['attribute', 'value_x', 'value_y', 'tf_x', 'tf_y', 'idf_x', 'idf_y']]
 # </editor-fold>
 # </editor-fold>
 
@@ -266,20 +281,20 @@ def main():
     export('qf_rqf_num', qf_rqf_num_df)
 
     # Debug
-    # print('\nIDF numerical')
-    # print(idf_num_df)
-    #
-    # print('\nIDF categorical')
-    # print(idf_cat_df)
-    #
-    # print('\nRQF categorical')
-    # print(qf_rqf_cat_df)
-    #
-    # print('\nRQF numerical')
-    # print(qf_rqf_num_df)
-    #
-    # print('\nJaccard categorical')
-    # print(qf_jac_cat_df)
+    print('\nIDF numerical')
+    print(idf_num_df)
+
+    print('\nIDF categorical')
+    print(idf_cat_df)
+
+    print('\nRQF categorical')
+    print(qf_rqf_cat_df)
+
+    print('\nRQF numerical')
+    print(qf_rqf_num_df)
+
+    print('\nJaccard categorical')
+    print(qf_jac_cat_df)
 
     # Plot
     # test = qf_rqf_num_df[qf_rqf_num_df['attribute'] == 'acceleration']
