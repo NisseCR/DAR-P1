@@ -3,11 +3,13 @@ DROP TABLE IF EXISTS idf_num;
 DROP TABLE IF EXISTS idf_cat;
 DROP TABLE IF EXISTS qf_rqf_cat;
 DROP TABLE IF EXISTS qf_jac_cat;
+DROP TABLE IF EXISTS qf_rqf_num;
 
 /* IDF numerical */
 CREATE TABLE idf_num (
     attribute VARCHAR(255),
     value REAL,
+    tf REAL,
     idf REAL,
     PRIMARY KEY (attribute, value)
 );
@@ -16,7 +18,7 @@ CREATE TABLE idf_num (
 CREATE TABLE idf_cat (
     attribute VARCHAR(255),
     value REAL,
-    frequency INTEGER,
+    tf INTEGER,
     idf REAL,
     PRIMARY KEY (attribute, value)
 );
@@ -25,7 +27,7 @@ CREATE TABLE idf_cat (
 CREATE TABLE qf_rqf_cat (
     attribute VARCHAR(255),
     value REAL,
-    frequency INTEGER,
+    tf INTEGER,
     qf REAL,
     PRIMARY KEY (attribute, value)
 );
@@ -34,6 +36,7 @@ CREATE TABLE qf_rqf_cat (
 CREATE TABLE qf_rqf_num (
     attribute VARCHAR(255),
     value REAL,
+    tf REAL,
     qf REAL,
     PRIMARY KEY (attribute, value)
 );
