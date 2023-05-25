@@ -17,7 +17,7 @@ CREATE TABLE idf_num (
 /* IDF categorical */
 CREATE TABLE idf_cat (
     attribute VARCHAR(255),
-    value REAL,
+    value VARCHAR(255),
     tf INTEGER,
     idf REAL,
     PRIMARY KEY (attribute, value)
@@ -26,7 +26,7 @@ CREATE TABLE idf_cat (
 /* QF rqf categorical */
 CREATE TABLE qf_rqf_cat (
     attribute VARCHAR(255),
-    value REAL,
+    value VARCHAR(255),
     tf INTEGER,
     qf REAL,
     PRIMARY KEY (attribute, value)
@@ -44,8 +44,8 @@ CREATE TABLE qf_rqf_num (
 /* QF jaccard categorical */
 CREATE TABLE qf_jac_cat (
     attribute VARCHAR(255),
-    value_x REAL,
-    value_y REAL,
+    value_x VARCHAR(255),
+    value_y VARCHAR(255),
     qf INTEGER,
-    PRIMARY KEY (attribute, value_x, value_y, qf)
+    PRIMARY KEY (attribute, value_x, value_y)
 );

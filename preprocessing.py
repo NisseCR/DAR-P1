@@ -38,7 +38,7 @@ def read_workload_data() -> pd.DataFrame:
         # Add each condition to the df (weighted)
         for con in cons:
             key, values = format_condition(con)
-            workload_elements += [(key, values) for _ in range(1)]
+            workload_elements += [(key, values) for _ in range(weight)]
 
     # Create DataFrame
     df = pd.DataFrame(workload_elements, columns=['attribute', 'value'])
@@ -59,7 +59,7 @@ def read_database_data() -> pd.DataFrame:
 
 # <editor-fold desc="Score formulas">
 def calculate_rqf(rqf: int, rqf_max: int) -> float:
-    return rqf / rqf_max
+    return (rqf + 1) / (rqf_max + 1)
 
 
 def calculate_numerical_tf(h: float, t: float | int, ts: pd.Series):
@@ -213,6 +213,10 @@ def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.Dat
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), idf=('idf', 'mean')).reset_index()
+    join_df = temp_df.copy()
+    join_df = join_df.shift(-1)
+    print(temp_df)
+    print(join_df)
     return pd.concat([result_df, temp_df])
 
 
@@ -254,28 +258,28 @@ def main():
     qf_jac_cat_df = get_jaccard(workload_df)
     qf_rqf_num_df = get_numerical_qf(workload_df)
 
-    # # Export data
-    export('idf_cat', idf_cat_df)
-    export('idf_num', idf_num_df)
-    export('qf_rqf_cat', qf_rqf_cat_df)
-    export('qf_jac_cat', qf_jac_cat_df)
-    export('qf_rqf_num', qf_rqf_num_df)
+    # Export data
+    # export('idf_cat', idf_cat_df)
+    # export('idf_num', idf_num_df)
+    # export('qf_rqf_cat', qf_rqf_cat_df)
+    # export('qf_jac_cat', qf_jac_cat_df)
+    # export('qf_rqf_num', qf_rqf_num_df)
 
     # Debug
-    print('\nIDF numerical')
-    print(idf_num_df)
-
-    print('\nIDF categorical')
-    print(idf_cat_df)
-
-    print('\nRQF categorical')
-    print(qf_rqf_cat_df)
-
-    print('\nRQF numerical')
-    print(qf_rqf_num_df)
-
-    print('\nJaccard categorical')
-    print(qf_jac_cat_df)
+    # print('\nIDF numerical')
+    # print(idf_num_df)
+    #
+    # print('\nIDF categorical')
+    # print(idf_cat_df)
+    #
+    # print('\nRQF categorical')
+    # print(qf_rqf_cat_df)
+    #
+    # print('\nRQF numerical')
+    # print(qf_rqf_num_df)
+    #
+    # print('\nJaccard categorical')
+    # print(qf_jac_cat_df)
 
     # Plot
     # test = qf_rqf_num_df[qf_rqf_num_df['attribute'] == 'acceleration']
