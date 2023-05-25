@@ -42,9 +42,18 @@ def idf_cat(cat, t_val, q_val) -> float:
 
 def qf_cat(cat, t_val, q_val):
     qf = get_qf(cat, t_val)
-    jacar = 1 #TODO
-    return qf*jacar
+    return qf*jacar(cat, t_val, q_val)
 
+
+def jacar(cat, t_val, q_val):
+    query = f"SELECT qf FROM qf_jac_cat WHERE attribute='{cat}' AND value_x='{t_val}' AND value_y='{q_val}'"
+    cur = CONN.cursor()
+    cur.execute(query)
+    res = cur.fetchone()
+    if res:
+        return res[0]
+    else:
+        return 0
 
 def get_qf(cat, val):
     query = f"SELECT qf FROM qf_rqf_Cat WHERE attribute='{cat}' AND value='{val}'"
@@ -64,7 +73,11 @@ def get_idf_cat(cat, val):
     query = f"SELECT idf FROM idf_Cat WHERE attribute='{cat}' AND value='{val}'"
     cur = CONN.cursor()
     cur.execute(query)
-    return cur.fetchone()[0]
+    res = cur.fetchone()
+    if res:
+        return res[0]
+    else:
+        return 0
 
 
 def s_num(cat, t_val, q_val):
