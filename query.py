@@ -11,18 +11,25 @@ def main():
     dict = parse()
     k = dict.pop('k')
     tuples = read_database_data()
-    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict), axis=1)
+    idfs_num = {cat: (idf_num(cat, val)) for cat, val in k.keys if cat in NUMS}
+    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, idfs_num), axis=1)
     #tuples.sort_values('score')
     print(tuples)
 
 
-def sim(tup: pd.Series, query: dict) -> float:
+def calc_h(cat):
+    query = f"SELECT qf FROM qf_jac_cat WHERE attribute='{cat}' AND value_x='{t_val}' AND value_y='{q_val}'"
+    cur = CONN.cursor()
+    cur.execute(query)
+
+
+def sim(tup: pd.Series, query: dict, idfs_num: dict) -> float:
     score = 0
     for queryCat, queryVal in query.items():
         if queryCat in CATS:
             score += s_cat(queryCat, tup[queryCat], queryVal)
         elif queryCat in NUMS:
-            score += s_num(queryCat, tup[queryCat], queryVal)
+            score += s_num(queryCat, tup[queryCat], queryVal, idfs_num)
         else:
             raise ValueError("Invalid category in input")
     return score
@@ -80,9 +87,20 @@ def get_idf_cat(cat, val):
         return 0
 
 
-def s_num(cat, t_val, q_val):
+def s_num(cat, t_val, q_val, idfs):
     print(f"{cat},{t_val},{q_val}")
     return 1
+
+
+def idf_num(cat, t_val):
+    query = f"SELECT idf_x,idf_y FROM idf_num WHERE attribute='{cat}' AND {t_val} between value_x and value_y"
+    cur = CONN.cursor()
+    cur.execute(query)
+    res = cur.fetchone()
+    if res:
+        return (res[0]+res[1])/2
+    else:
+        return 0
 
 
 def parse()->dict:
