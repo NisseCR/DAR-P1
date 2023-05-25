@@ -63,7 +63,7 @@ def get_qf(cat, val):
     if res:
         return res[0]
     else:
-        RQFMaxQuery = "SELECT MAX(frequency) FROM qf_rqf_cat"
+        RQFMaxQuery = "SELECT MAX(tf) FROM qf_rqf_cat"
         cur.execute(RQFMaxQuery)
         RQFMax = cur.fetchone()[0]
         return 1/(RQFMax+1)
