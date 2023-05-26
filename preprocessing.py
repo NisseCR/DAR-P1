@@ -12,6 +12,12 @@ NUMS = ['mpg', 'displacement', 'horsepower', 'weight', 'acceleration', 'model_ye
 
 # <editor-fold desc="Read data">
 def format_condition(con: str) -> tuple[str, list[str]]:
+    """
+    Retrieve tuple of attribute A and term t.
+    In case of an IN condition, return a list of t's.
+    :param con: condition string
+    :return: (A, t[])
+    """
     if ' = ' in con:
         elements = con.split(' = ')
         return elements[0], [elements[1]]
@@ -23,6 +29,10 @@ def format_condition(con: str) -> tuple[str, list[str]]:
 
 
 def read_workload_data() -> pd.DataFrame:
+    """
+    Parse workload file and convert data to a DataFrame.
+    :return:
+    """
     # Read workload file
     with open('./workload.txt') as f:
         lines = f.readlines()
@@ -47,6 +57,10 @@ def read_workload_data() -> pd.DataFrame:
 
 
 def read_database_data() -> pd.DataFrame:
+    """
+    Read table K from database.
+    :return:
+    """
     query = """
         SELECT
             *
@@ -58,6 +72,11 @@ def read_database_data() -> pd.DataFrame:
 
 
 def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Pair each tuple with the next tuple in the DataFrame, allowing for easier interpolation lookup.
+    :param df: numeric data
+    :return: DataFrame with ranges min and max
+    """
     df = df.sort_values(by='value')
     df['key'] = df.index
     join_df = df.copy()
@@ -71,15 +90,34 @@ def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="Score formulas">
 def calculate_rqf(rqf: int, rqf_max: int) -> float:
+    """
+    Calculate the RQF score of a TF.
+    :param rqf: term frequency
+    :param rqf_max: max frequency
+    :return: RQF
+    """
     return (rqf + 1) / (rqf_max + 1)
 
 
 def calculate_numerical_tf(h: float, t: float | int, ts: pd.Series):
+    """
+    Smooth curve function to approximate frequency distribution.
+    :param h: bandwidth constant
+    :param t: term t
+    :param ts: row in which term t is present
+    :return: approximated TF
+    """
     rs = ts.apply(lambda ti: math.e**((-1/2) * (((ti - t) / h)**2)))
     return rs.sum()
 
 
 def calculate_jaccard(p: list, q: list) -> float:
+    """
+    Calculate similarity between two terms, based on workload data.
+    :param p: query set of term p
+    :param q: query set of term q
+    :return:
+    """
     p_set = set(p)
     q_set = set(q)
 
@@ -88,6 +126,12 @@ def calculate_jaccard(p: list, q: list) -> float:
 
 
 def calculate_idf(n: int, tf: int) -> float:
+    """
+    Calculate the IDF score of a tf.
+    :param n: total amount of tuples
+    :param tf: term frequency
+    :return:
+    """
     return math.log(n / tf)
 # </editor-fold>
 
@@ -95,6 +139,11 @@ def calculate_idf(n: int, tf: int) -> float:
 # <editor-fold desc="Data aggregation">
 # <editor-fold desc="QF categorical">
 def get_categorical_qf(workload_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Categorical QF pipeline.
+    :param workload_df:
+    :return:
+    """
     df = workload_df.copy()
 
     # Get categorical attributes
@@ -115,6 +164,14 @@ def get_categorical_qf(workload_df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="QF numerical">
 def add_numerical_qf_attribute(df: pd.DataFrame, attribute: str, result_df: pd.DataFrame, n: int) -> pd.DataFrame:
+    """
+    Numerical QF pipeline for a single attribute / column.
+    :param df:
+    :param attribute:
+    :param result_df:
+    :param n:
+    :return:
+    """
     temp_df = df.copy()
     temp_df = temp_df[temp_df['attribute'] == attribute]
 
@@ -136,6 +193,11 @@ def add_numerical_qf_attribute(df: pd.DataFrame, attribute: str, result_df: pd.D
 
 
 def get_numerical_qf(workload_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Numerical QF pipeline.
+    :param workload_df:
+    :return:
+    """
     df = workload_df[['attribute', 'value']].copy()
 
     # Get numerical attributes
@@ -156,6 +218,11 @@ def get_numerical_qf(workload_df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="Jaccard">
 def get_jaccard(workload_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Categorical Jaccard pipeline
+    :param workload_df:
+    :return:
+    """
     df = workload_df.copy()
 
     # Get IN clauses
@@ -179,6 +246,14 @@ def get_jaccard(workload_df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="IDF categorical">
 def add_categorical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.DataFrame, n: int) -> pd.DataFrame:
+    """
+    Categorical IDF pipeline for a single attribute / column.
+    :param df:
+    :param column:
+    :param result_df:
+    :param n:
+    :return:
+    """
     # Count values
     temp_df = df[column]
     temp_df = temp_df.value_counts().reset_index()
@@ -195,6 +270,11 @@ def add_categorical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.D
 
 
 def get_categorical_idf(database_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Categorical IDF pipeline.
+    :param database_df:
+    :return:
+    """
     df = database_df.copy()
 
     # Get categorical attributes
@@ -213,6 +293,14 @@ def get_categorical_idf(database_df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="IDF numerical">
 def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.DataFrame, n: int) -> pd.DataFrame:
+    """
+    Numerical IDF pipeline for a single attribute / column.
+    :param df:
+    :param column:
+    :param result_df:
+    :param n:
+    :return:
+    """
     temp_df = df[[column]].copy()
 
     # Format
@@ -236,6 +324,11 @@ def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.Dat
 
 
 def get_numerical_idf(database_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Numerical IDF pipeline.
+    :param database_df:
+    :return:
+    """
     df = database_df.copy()
 
     # Get categorical attributes
@@ -255,6 +348,12 @@ def get_numerical_idf(database_df: pd.DataFrame) -> pd.DataFrame:
 
 # <editor-fold desc="Export">
 def export(name: str, df: pd.DataFrame):
+    """
+    Export data to database table.
+    :param name:
+    :param df:
+    :return:
+    """
     CURSOR.execute(f'DELETE FROM {name}')
     df.to_sql(name, CONN, if_exists='append', index=False, method='multi')
     print(f'Exported data to [{name}]')
@@ -262,6 +361,10 @@ def export(name: str, df: pd.DataFrame):
 
 
 def main():
+    """
+    Run method of pre-processing unit.
+    :return:
+    """
     # Fetch data
     workload_df = read_workload_data()
     database_df = read_database_data()
