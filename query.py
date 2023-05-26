@@ -166,13 +166,12 @@ def parse()->dict:
     prompt = input()
     terminatedRE = re.compile(r"[^;]+")
     terminated = terminatedRE.match(prompt).group()
-    print(terminated)
     predicatesRE = re.compile(r"[^,]+")
     predicates = predicatesRE.findall(terminated)
-    print(predicates)
     dict = {}
     for predicate in predicates:
-        attribute, value = predicate.split(" = ")
+        splitre = re.compile(r"\s?=\s?")
+        attribute, value = splitre.split(predicate)
         attribute = attribute.strip()
         value = eval(value.strip())
         dict[attribute] = value
