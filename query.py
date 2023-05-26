@@ -10,17 +10,18 @@ pd.options.mode.chained_assignment = None
 
 def main():
     dict = parse()
-    result = retrieve(dict)
+    result = retrieve_tuples(dict)
     pd.set_option('display.max_columns', 15)
     print(result)
 
 
-def retrieve(dict):
+def retrieve_tuples(dict):
     k = dict.pop('k')
-    tuples = calculate_scores(k, dict)
+    tuples = calculate_scores(dict)
     sorted = tuples.sort_values('score', ascending=False)
     max_score = sorted.iloc[0]['score']
     tuples_with_max_score = sorted[sorted['score'] == max_score]
+    #if the top k tuples all have the same score a sort of "tiebreaker" is needed
     if (len(tuples_with_max_score.index) > k):
         attributes_not_in_query = [attribute for attribute in CATS + NUMS if attribute not in dict.keys()]
         res = calculate_many_answers(attributes_not_in_query, tuples_with_max_score)
@@ -30,13 +31,14 @@ def retrieve(dict):
         return sorted.head(k)
 
 
-def calculate_scores(k, dict):
+def calculate_scores(dict):
+    #fetch entire autompg database
     tuples = read_database_data()
     num_data = {cat: (idf_num(cat, val), qf_num(cat, val), calc_h(cat)) for cat, val in dict.items() if cat in NUMS}
     tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, num_data), axis=1)
     return tuples
 
-
+# to break ties the sum of the qfs of none query attributes is used as the score
 def calculate_many_answers(attributes, tuples):
     tuples['score2'] = tuples.apply(lambda tup: row_qf_score(tup, attributes), axis=1)
     return tuples
@@ -59,6 +61,7 @@ def calc_h(cat):
     res = [row[0] for row in cur.fetchall()]
     stdev = np.std(res)
     return 1.06*stdev*len(res)**(-1/5)
+
 
 def sim(tup: pd.Series, query: dict, num_data: dict) -> float:
     score = 0
