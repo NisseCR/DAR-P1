@@ -6,15 +6,50 @@ import sqlite3
 from math import e
 from preprocessing import read_database_data, CATS, NUMS, CURSOR, CONN
 
+pd.options.mode.chained_assignment = None
 
 def main():
     dict = parse()
+    result = retrieve(dict)
+    pd.set_option('display.max_columns', 15)
+    print(result)
+
+
+def retrieve(dict):
     k = dict.pop('k')
-    tuples = read_database_data()
-    num_data = {cat: (idf_num(cat, val), qf_num(cat,val), calc_h(cat)) for cat, val in dict.items() if cat in NUMS}
-    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, num_data), axis=1)
+    tuples = calculate_scores(k, dict)
     sorted = tuples.sort_values('score', ascending=False)
-    print(sorted.head(k))
+    max_score = sorted.iloc[0]['score']
+    tuples_with_max_score = sorted[sorted['score'] == max_score]
+    if (len(tuples_with_max_score.index) > k):
+        attributes_not_in_query = [attribute for attribute in CATS + NUMS if attribute not in dict.keys()]
+        res = calculate_many_answers(attributes_not_in_query, tuples_with_max_score)
+        sorted2 = res.sort_values('score2', ascending=False)
+        return sorted2.head(k)
+    else:
+        return sorted.head(k)
+
+
+def calculate_scores(k, dict):
+    tuples = read_database_data()
+    num_data = {cat: (idf_num(cat, val), qf_num(cat, val), calc_h(cat)) for cat, val in dict.items() if cat in NUMS}
+    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, num_data), axis=1)
+    return tuples
+
+
+def calculate_many_answers(attributes, tuples):
+    tuples['score2'] = tuples.apply(lambda tup: row_qf_score(tup, attributes), axis=1)
+    return tuples
+
+
+def row_qf_score(tuple, attributes):
+    score = 0
+    for attribute in attributes:
+        if attribute in CATS:
+            score += get_qf(attribute, tuple[attribute])
+        elif attribute in NUMS:
+            score += qf_num(attribute, tuple[attribute])
+    return score
 
 
 def calc_h(cat):
@@ -95,6 +130,7 @@ def s_num(cat, t_val, q_val, num_data):
 
 
 def get_between_and_interpolate(cat, table, res_attribute, val):
+    #TODO wat als waarde niet between is maar precies?
     query = f"SELECT {res_attribute}_x,{res_attribute}_y,value_x,value_y FROM {table} WHERE attribute='{cat}' AND {val} between value_x and value_y"
     cur = CONN.cursor()
     cur.execute(query)
