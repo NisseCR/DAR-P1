@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
-import math
+from math import e
 from preprocessing import read_database_data, CATS, NUMS, CURSOR, CONN
 
 
@@ -11,25 +11,27 @@ def main():
     dict = parse()
     k = dict.pop('k')
     tuples = read_database_data()
-    idfs_num = {cat: (idf_num(cat, val)) for cat, val in k.keys if cat in NUMS}
-    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, idfs_num), axis=1)
-    #tuples.sort_values('score')
-    print(tuples)
+    num_data = {cat: (idf_num(cat, val), qf_num(cat,val), calc_h(cat)) for cat, val in dict.items() if cat in NUMS}
+    tuples['score'] = tuples.apply(lambda tup: sim(tup, dict, num_data), axis=1)
+    sorted = tuples.sort_values('score', ascending=False)
+    print(sorted.head(k))
 
 
 def calc_h(cat):
-    query = f"SELECT qf FROM qf_jac_cat WHERE attribute='{cat}' AND value_x='{t_val}' AND value_y='{q_val}'"
+    query = f"SELECT {cat} FROM autompg"
     cur = CONN.cursor()
     cur.execute(query)
+    res = [row[0] for row in cur.fetchall()]
+    stdev = np.std(res)
+    return 1.06*stdev*len(res)**(-1/5)
 
-
-def sim(tup: pd.Series, query: dict, idfs_num: dict) -> float:
+def sim(tup: pd.Series, query: dict, num_data: dict) -> float:
     score = 0
     for queryCat, queryVal in query.items():
         if queryCat in CATS:
             score += s_cat(queryCat, tup[queryCat], queryVal)
         elif queryCat in NUMS:
-            score += s_num(queryCat, tup[queryCat], queryVal, idfs_num)
+            score += s_num(queryCat, tup[queryCat], queryVal, num_data)
         else:
             raise ValueError("Invalid category in input")
     return score
@@ -87,20 +89,32 @@ def get_idf_cat(cat, val):
         return 0
 
 
-def s_num(cat, t_val, q_val, idfs):
-    print(f"{cat},{t_val},{q_val}")
-    return 1
+def s_num(cat, t_val, q_val, num_data):
+    idf, qf, h = num_data[cat]
+    return e**(-0.5*((t_val-q_val)/2)**2)*idf*qf
 
 
-def idf_num(cat, t_val):
-    query = f"SELECT idf_x,idf_y FROM idf_num WHERE attribute='{cat}' AND {t_val} between value_x and value_y"
+def get_between_and_interpolate(cat, table, res_attribute, val):
+    query = f"SELECT {res_attribute}_x,{res_attribute}_y,value_x,value_y FROM {table} WHERE attribute='{cat}' AND {val} between value_x and value_y"
     cur = CONN.cursor()
     cur.execute(query)
     res = cur.fetchone()
     if res:
-        return (res[0]+res[1])/2
+        xres, yres, xval, yval = res
+        dif = yval - xval
+        factor = (val-xval)/dif
+        difres = yres - xres
+        return yres + difres*factor
     else:
         return 0
+
+
+def idf_num(cat, t_val):
+    return get_between_and_interpolate(cat, "idf_num", "idf", t_val)
+
+
+def qf_num(cat, t_val):
+    return get_between_and_interpolate(cat, "qf_rqf_num", "qf", t_val)
 
 
 def parse()->dict:
