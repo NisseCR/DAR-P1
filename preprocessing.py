@@ -79,6 +79,7 @@ def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
     :param df: numeric data
     :return: DataFrame with ranges min and max
     """
+    df['value'] = df['value'].astype(float)
     df = df.sort_values(by='value')
     df['key'] = df.index
     join_df = df.copy()
@@ -90,10 +91,10 @@ def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_boundaries(df: pd.DataFrame, attribute: str) -> pd.DataFrame:
+def add_boundaries(df: pd.DataFrame, attribute: str, score_name: str) -> pd.DataFrame:
     idx = len(df)
-    df.loc[idx] = [0, attribute, 0, 0]
-    df.loc[idx + 1] = [9999, attribute, 0, 0]
+    df.loc[idx] = {'attribute': attribute, 'value': 0, 'tf': 0, score_name: 0}
+    df.loc[idx + 1] = {'attribute': attribute, 'value': 999999, 'tf': 0, score_name: 0}
     return df
 
 
@@ -194,7 +195,7 @@ def add_numerical_qf_attribute(df: pd.DataFrame, attribute: str, result_df: pd.D
     temp_df['qf'] = temp_df['tf'].apply(lambda rqf: calculate_rqf(rqf, rqf_max))
 
     # Add boundaries
-    temp_df = add_boundaries(temp_df, attribute)
+    temp_df = add_boundaries(temp_df, attribute, 'qf')
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), qf=('qf', 'mean')).reset_index()
@@ -328,7 +329,7 @@ def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.Dat
     temp_df['idf'] = temp_df['tf'].apply(lambda f: calculate_idf(n, f))
 
     # Add boundaries
-    temp_df = add_boundaries(temp_df, column)
+    temp_df = add_boundaries(temp_df, column, 'idf')
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), idf=('idf', 'mean')).reset_index()
