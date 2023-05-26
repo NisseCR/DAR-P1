@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -85,6 +87,13 @@ def shift_merge(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop([])
     df = df.rename(columns={'attribute_x': 'attribute'})
     df = df.drop(['attribute_y', 'key'], axis=1)
+    return df
+
+
+def add_boundaries(df: pd.DataFrame, attribute: str) -> pd.DataFrame:
+    idx = len(df)
+    df.loc[idx] = [0, attribute, 0, 0]
+    df.loc[idx + 1] = [9999, attribute, 0, 0]
     return df
 
 
@@ -183,6 +192,9 @@ def add_numerical_qf_attribute(df: pd.DataFrame, attribute: str, result_df: pd.D
     temp_df['tf'] = temp_df['value'].apply(lambda t: calculate_numerical_tf(h, t, temp_df['value']))
     rqf_max = temp_df['tf'].max()
     temp_df['qf'] = temp_df['tf'].apply(lambda rqf: calculate_rqf(rqf, rqf_max))
+
+    # Add boundaries
+    temp_df = add_boundaries(temp_df, attribute)
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), qf=('qf', 'mean')).reset_index()
@@ -314,6 +326,9 @@ def add_numerical_idf_attribute(df: pd.DataFrame, column: str, result_df: pd.Dat
     # Calculate IDF score
     temp_df['tf'] = temp_df['value'].apply(lambda t: calculate_numerical_tf(h, t, temp_df['value']))
     temp_df['idf'] = temp_df['tf'].apply(lambda f: calculate_idf(n, f))
+
+    # Add boundaries
+    temp_df = add_boundaries(temp_df, column)
 
     # Append result
     temp_df = temp_df.groupby(['attribute', 'value']).agg(tf=('tf', 'mean'), idf=('idf', 'mean')).reset_index()
