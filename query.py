@@ -75,7 +75,8 @@ def sim(tup: pd.Series, query: dict, num_data: dict) -> float:
 def s_cat(cat, t_val, q_val):
     idf = idf_cat(cat, t_val, q_val)
     qf = qf_cat(cat,t_val,q_val)
-    return idf*qf
+    res = idf*qf
+    return res
 
 def idf_cat(cat, t_val, q_val) -> float:
     if (t_val==q_val):
@@ -90,6 +91,8 @@ def qf_cat(cat, t_val, q_val):
 
 
 def jacar(cat, t_val, q_val):
+    if(t_val==q_val):
+        return 0
     query = f"SELECT qf FROM qf_jac_cat WHERE attribute='{cat}' AND value_x='{t_val}' AND value_y='{q_val}'"
     cur = CONN.cursor()
     cur.execute(query)
@@ -126,11 +129,14 @@ def get_idf_cat(cat, val):
 
 def s_num(cat, t_val, q_val, num_data):
     idf, qf, h = num_data[cat]
-    return e**(-0.5*((t_val-q_val)/2)**2)*idf*qf
+    factor = e**(-0.5*((t_val-q_val)/h)**2)
+    if(t_val==q_val):
+        return idf*qf
+    res = idf*factor*qf
+    return res
 
 
 def get_between_and_interpolate(cat, table, res_attribute, val):
-    #TODO wat als waarde niet between is maar precies?
     query = f"SELECT {res_attribute}_x,{res_attribute}_y,value_x,value_y FROM {table} WHERE attribute='{cat}' AND {val} between value_x and value_y"
     cur = CONN.cursor()
     cur.execute(query)
