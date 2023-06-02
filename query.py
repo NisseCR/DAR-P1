@@ -95,7 +95,7 @@ def qf_cat(cat, t_val, q_val):
 
 def jacar(cat, t_val, q_val):
     if(t_val==q_val):
-        return 0
+        return 1
     query = f"SELECT qf FROM qf_jac_cat WHERE attribute='{cat}' AND value_x='{t_val}' AND value_y='{q_val}'"
     cur = CONN.cursor()
     cur.execute(query)
